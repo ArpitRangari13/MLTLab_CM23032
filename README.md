@@ -18,4 +18,14 @@ The goal is to explore fundamental ML concepts, hands-on coding with TensorFlow.
    ```bash
    git clone https://github.com/ArpitRangari13/MLTLab_CM23032.git
    cd MLTLab_CM23032
+---
 
+## 📚 Experiment List
+
+| Sr. No. | Experiment Name | Link |
+| :---: | :--- | :--- |
+| 1 | **Foundational ML Concepts** | [View Lab 1](./Linear%20Regression%20with%20Synthetic%20Data/Lab%20Assingment%201/) |
+| 2 | **Linear Regression with Synthetic Data** | [View Lab 2](./Linear%20Regression%20with%20Synthetic%20Data/Lab%20Assingment%202/) |
+| 3 | **Digit Recognition (MNIST Dataset)** | [View Lab 3](./Digit%20Recognition%20(MNIST%20Dataset)/) |
+
+---
