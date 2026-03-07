@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ML Tools Lab Dashboard | Arpit Rangari</title>
+    <style>
+        :root { --sidebar-bg: #1e1e2d; --accent: #00d1b2; --text-main: #ffffff; --text-dim: #a2a3b7; --main-bg: #f5f6fa; }
+        body { font-family: 'Inter', 'Segoe UI', sans-serif; margin: 0; display: flex; height: 100vh; background: var(--main-bg); overflow: hidden; }
+        
+        /* Sidebar Styling */
+        #sidebar { width: 320px; background: var(--sidebar-bg); color: var(--text-main); display: flex; flex-direction: column; overflow-y: auto; box-shadow: 4px 0 10px rgba(0,0,0,0.3); }
+        .sidebar-header { padding: 30px 20px; border-bottom: 1px solid #2b2b40; text-align: center; }
+        .sidebar-header h1 { font-size: 1.4rem; margin: 0; color: var(--accent); letter-spacing: 1px; }
+        .sidebar-header p { font-size: 0.8rem; color: var(--text-dim); margin: 5px 0 0; }
+
+        .lab-section { padding: 20px 0; }
+        .section-label { padding: 10px 25px; font-size: 0.75rem; text-transform: uppercase; color: var(--text-dim); letter-spacing: 1.5px; font-weight: bold; }
+        
+        .nav-item { padding: 12px 25px; display: flex; align-items: center; cursor: pointer; transition: 0.2s; border-left: 4px solid transparent; color: #cdcdde; text-decoration: none; font-size: 0.95rem; }
+        .nav-item:hover { background: #2b2b40; color: var(--accent); }
+        .nav-item.active { background: #2b2b40; border-left-color: var(--accent); color: var(--accent); font-weight: bold; }
+
+        /* Content Area */
+        #content { flex: 1; display: flex; flex-direction: column; }
+        header { background: #ffffff; height: 70px; display: flex; align-items: center; justify-content: space-between; padding: 0 40px; box-shadow: 0 2px 15px rgba(0,0,0,0.05); z-index: 10; }
+        #view-frame { flex: 1; border: none; width: 100%; height: 100%; background: #ffffff; }
+        
+        /* Placeholder Screen */
+        .welcome-screen { display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100%; color: #7e8299; text-align: center; }
+        .welcome-screen h2 { margin-top: 20px; color: #3f4254; }
+    </style>
+</head>
+<body>
+
+<aside id="sidebar">
+    <div class="sidebar-header">
+        <h1>ML TOOLS LAB</h1>
+        <p>Arpit Rangari | CM23032</p>
+    </div>
+
+    <div class="lab-section">
+        <div class="section-label">Basics</div>
+        <a href="#" class="nav-item" onclick="loadLab('hello_tf.html', this)">0. Hello TensorFlow.js</a>
+        <a href="#" class="nav-item" onclick="loadLab('Linear Regression with Synthetic Data/Lab Assingment 2/index.html', this)">1. Linear Regression</a>
+
+        <div class="section-label">Computer Vision</div>
+        <a href="#" class="nav-item" onclick="loadLab('Digit Recognition (MNIST Dataset)/Lab Assingment 3/index.html', this)">2. MNIST Digit Recognition</a>
+        <a href="#" class="nav-item" onclick="loadLab('Image Classification (MobileNet)/index.html', this)">4. MobileNet Classification</a>
+        <a href="#" class="nav-item" onclick="loadLab('object_detection.html', this)">5. Webcam Object Detection</a>
+        <a href="#" class="nav-item" onclick="loadLab('posenet.html', this)">6. PoseNet Detection</a>
+
+        <div class="section-label">Natural Language</div>
+        <a href="#" class="nav-item" onclick="loadLab('Text Sentiment Analysis/index.html', this)">3. Text Sentiment Analysis</a>
+
+        <div class="section-label">Advanced & Deployment</div>
+        <a href="#" class="nav-item" onclick="loadLab('deploy_model.html', this)">7. Save & Deploy Model</a>
+        <a href="#" class="nav-item" onclick="loadLab('transfer_learning.html', this)">8. Transfer Learning (Fruits)</a>
+
+        <div class="section-label">Final Project</div>
+        <a href="#" class="nav-item" style="color: #ffc107;" onclick="loadLab('project.html', this)">🚀 Open Ended Practical</a>
+    </div>
+</aside>
+
+<main id="content">
+    <header>
+        <span id="current-title">Select an Experiment</span>
+        <div style="font-weight: 600;">Course: CM23032</div>
+    </header>
+
+    <div id="placeholder" class="welcome-screen">
+        <svg width="80" height="80" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" stroke="#00d1b2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 17L12 22L22 17" stroke="#00d1b2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M2 12L12 17L22 12" stroke="#00d1b2" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <h2>Practical Assignment Repository</h2>
+        <p>Click on any sidebar item to execute the model and view results.</p>
+    </div>
+
+    <iframe id="view-frame" src="" style="display: none;"></iframe>
+</main>
+
+<script>
+    function loadLab(url, element) {
+        // Update Iframe
+        const frame = document.getElementById('view-frame');
+        const placeholder = document.getElementById('placeholder');
+        const title = document.getElementById('current-title');
+
+        placeholder.style.display = 'none';
+        frame.style.display = 'block';
+        frame.src = url;
+
+        // Update Title
+        title.innerHTML = "<strong>Experiment:</strong> " + element.innerText;
+
+        // Active State UI
+        document.querySelectorAll('.nav-item').forEach(item => item.classList.remove('active'));
+        element.classList.add('active');
+    }
+</script>
+
+</body>
+</html>
