@@ -27,5 +27,7 @@ The goal is to explore fundamental ML concepts, hands-on coding with TensorFlow.
 | 1 | **Foundational ML Concepts** | [View Lab 1](./Linear%20Regression%20with%20Synthetic%20Data/Lab%20Assingment%201/) |
 | 2 | **Linear Regression with Synthetic Data** | [View Lab 2](./Linear%20Regression%20with%20Synthetic%20Data/Lab%20Assingment%202/) |
 | 3 | **Digit Recognition (MNIST Dataset)** | [View Lab 3](./Digit%20Recognition%20(MNIST%20Dataset)/) |
+| 4 | **Text Sentiment Analysis** | [View Lab 4](./DText%20Sentiment%20Analysis/) |
+
 
 ---
