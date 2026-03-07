@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lab 3: Sentiment Analysis Training</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; padding: 20px; line-height: 1.6; }
+        .container { max-width: 800px; margin: auto; background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .log-box { background: #2c3e50; color: #ecf0f1; padding: 15px; border-radius: 5px; height: 200px; overflow-y: scroll; font-family: monospace; }
+        button { background: #3498db; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; }
+        button:disabled { background: #95a5a6; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Lab 5: Sentiment Classifier (Task 1)</h1>
+    <p>Training a model on a small dataset of positive and negative sentences.</p>
+    
+    <button id="train-btn">Start Training Model</button>
+    <p id="status">Status: Ready to train</p>
+
+    <h3>Training Logs:</h3>
+    <div id="log" class="log-box"></div>
+</div>
+
+<script>
+    // 1. Small Dataset
+    const data = [
+        { text: "i love this product", label: 1 },
+        { text: "this is amazing and great", label: 1 },
+        { text: "excellent work and very happy", label: 1 },
+        { text: "great experience highly recommend", label: 1 },
+        { text: "fantastic and wonderful", label: 1 },
+        { text: "i hate this so much", label: 0 },
+        { text: "this is terrible and bad", label: 0 },
+        { text: "worst experience ever", label: 0 },
+        { text: "very disappointed with this", label: 0 },
+        { text: "poor quality and awful", label: 0 }
+    ];
+
+    // 2. Simple Tokenizer & Vocabulary
+    const words = Array.from(new Set(data.flatMap(d => d.text.split(' '))));
+    const vocab = Object.fromEntries(words.map((w, i) => [w, i + 1]));
+    const vocabSize = words.length + 1;
+    const maxLen = 5;
+
+    function encode(text) {
+        let tokens = text.toLowerCase().split(' ').map(w => vocab[w] || 0);
+        // Pad or truncate to maxLen
+        if (tokens.length < maxLen) {
+            tokens = [...tokens, ...new Array(maxLen - tokens.length).fill(0)];
+        } else {
+            tokens = tokens.slice(0, maxLen);
+        }
+        return tokens;
+    }
+
+    // 3. Prepare Tensors
+    const xs = tf.tensor2d(data.map(d => encode(d.text)));
+    const ys = tf.tensor2d(data.map(d => [d.label]));
+
+    // 4. Create Model
+    const model = tf.sequential();
+    // Embedding layer: turns word indices into dense vectors
+    model.add(tf.layers.embedding({ inputDim: vocabSize, outputDim: 8, inputLength: maxLen }));
+    model.add(tf.layers.flatten());
+    model.add(tf.layers.dense({ units: 1, activation: 'sigmoid' })); // Binary output (0 or 1)
+
+    model.compile({ optimizer: 'adam', loss: 'binaryCrossentropy', metrics: ['accuracy'] });
+
+    // 5. Training Logic
+    const logBox = document.getElementById('log');
+    const status = document.getElementById('status');
+    const btn = document.getElementById('train-btn');
+
+    btn.onclick = async () => {
+        btn.disabled = true;
+        status.innerText = "Training...";
+        
+        await model.fit(xs, ys, {
+            epochs: 50,
+            callbacks: {
+                onEpochEnd: (epoch, logs) => {
+                    const message = `Epoch ${epoch + 1}: loss = ${logs.loss.toFixed(4)}, acc = ${logs.acc.toFixed(4)}`;
+                    logBox.innerHTML += `<div>${message}</div>`;
+                    logBox.scrollTop = logBox.scrollHeight;
+                }
+            }
+        });
+
+        status.innerText = "Training Complete!";
+        status.style.color = "green";
+    };
+</script>
+
+</body>
+</html>

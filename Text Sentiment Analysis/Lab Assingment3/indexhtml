@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Lab 3: RNN vs Dense Comparison</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f0f2f5; padding: 20px; color: #333; }
+        .container { max-width: 900px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+        .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin: 20px 0; }
+        .model-card { border: 1px solid #ddd; padding: 15px; border-radius: 8px; background: #fff; }
+        .dense-card { border-top: 5px solid #3498db; }
+        .rnn-card { border-top: 5px solid #9b59b6; }
+        .accuracy { font-size: 28px; font-weight: bold; margin: 10px 0; }
+        button { background: #2c3e50; color: white; padding: 12px 25px; border: none; border-radius: 5px; cursor: pointer; width: 100%; font-size: 16px; }
+        button:hover { background: #34495e; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { padding: 12px; border: 1px solid #eee; text-align: left; }
+        th { background: #f8f9fa; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>Task 3: RNN vs. Simple Dense Performance</h1>
+    <p>Compare how a standard Dense network and a Recurrent Neural Network (RNN) handle text sequences.</p>
+    
+    <button id="run-btn">Train & Compare Models</button>
+
+    <div class="comparison-grid">
+        <div class="model-card dense-card">
+            <h3>Simple Dense Network</h3>
+            <p>Architecture: Embedding → Flatten → Dense</p>
+            <div id="dense-acc" class="accuracy">--%</div>
+            <p id="dense-status">Status: Idle</p>
+        </div>
+
+        <div class="model-card rnn-card">
+            <h3>Recurrent Network (RNN)</h3>
+            <p>Architecture: Embedding → SimpleRNN → Dense</p>
+            <div id="rnn-acc" class="accuracy">--%</div>
+            <p id="rnn-status">Status: Idle</p>
+        </div>
+    </div>
+
+    <h2>Architecture Analysis</h2>
+    <table>
+        <thead>
+            <tr>
+                <th>Feature</th>
+                <th>Simple Dense Network</th>
+                <th>RNN (Recurrent)</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><strong>Word Order</strong></td>
+                <td>Ignored (treats text as a set)</td>
+                <td>Maintained (processes sequentially)</td>
+            </tr>
+            <tr>
+                <td><strong>Memory</strong></td>
+                <td>None</td>
+                <td>Hidden state $h_t$ stores sequence info</td>
+            </tr>
+            <tr>
+                <td><strong>Complexity</strong></td>
+                <td>Low (Fast training)</td>
+                <td>Higher (Computationally expensive)</td>
+            </tr>
+        </tbody>
+    </table>
+</div>
+
+<script>
+    // 1. Dataset & Preprocessing
+    const sentences = [
+        "i love this", "amazing great work", "happy wonderful", "fantastic excellent",
+        "i hate this", "terrible bad", "awful poor", "disappointed worst"
+    ];
+    const labels = [1, 1, 1, 1, 0, 0, 0, 0];
+
+    const words = Array.from(new Set(sentences.flatMap(s => s.split(' '))));
+    const vocab = Object.fromEntries(words.map((w, i) => [w, i + 1]));
+    const vocabSize = words.length + 1;
+    const maxLen = 3;
+
+    function encode(text) {
+        let tokens = text.toLowerCase().split(' ').map(w => vocab[w] || 0);
+        return tokens.length < maxLen ? [...tokens, ...new Array(maxLen - tokens.length).fill(0)] : tokens.slice(0, maxLen);
+    }
+
+    const xs = tf.tensor2d(sentences.map(s => encode(s)));
+    const ys = tf.tensor2d(labels.map(l => [l]));
+
+    // 2. Build Models
+    function createDenseModel() {
+        const model = tf.sequential();
+        model.add(tf.layers.embedding({ inputDim: vocabSize, outputDim: 8, inputLength: maxLen }));
+        model.add(tf.layers.flatten());
+        model.add(tf.layers.dense({ units: 1, activation: 'sigmoid' }));
+        model.compile({ optimizer: 'adam', loss: 'binaryCrossentropy', metrics: ['accuracy'] });
+        return model;
+    }
+
+    function createRNNModel() {
+        const model = tf.sequential();
+        model.add(tf.layers.embedding({ inputDim: vocabSize, outputDim: 8, inputLength: maxLen }));
+        // SimpleRNN layer to handle sequence
+        model.add(tf.layers.simpleRNN({ units: 8, returnSequences: false }));
+        model.add(tf.layers.dense({ units: 1, activation: 'sigmoid' }));
+        model.compile({ optimizer: 'adam', loss: 'binaryCrossentropy', metrics: ['accuracy'] });
+        return model;
+    }
+
+    // 3. Comparison Logic
+    document.getElementById('run-btn').onclick = async () => {
+        const denseModel = createDenseModel();
+        const rnnModel = createRNNModel();
+
+        document.getElementById('dense-status').innerText = "Training...";
+        document.getElementById('rnn-status').innerText = "Training...";
+
+        // Train Dense
+        const denseHist = await denseModel.fit(xs, ys, { epochs: 30 });
+        const denseFinalAcc = (denseHist.history.acc.slice(-1)[0] * 100).toFixed(1);
+        document.getElementById('dense-acc').innerText = denseFinalAcc + "%";
+        document.getElementById('dense-status').innerText = "Complete";
+
+        // Train RNN
+        const rnnHist = await rnnModel.fit(xs, ys, { epochs: 30 });
+        const rnnFinalAcc = (rnnHist.history.acc.slice(-1)[0] * 100).toFixed(1);
+        document.getElementById('rnn-acc').innerText = rnnFinalAcc + "%";
+        document.getElementById('rnn-status').innerText = "Complete";
+    };
+</script>
+
+</body>
+</html>
