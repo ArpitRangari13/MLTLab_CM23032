@@ -1,0 +1,54 @@
+!DOCTYPE html
+html lang=en
+head
+    meta charset=UTF-8
+    titleMobileNet Image Classifiertitle
+    script src=httpscdn.jsdelivr.netnpm@tensorflowtfjsscript
+    script src=httpscdn.jsdelivr.netnpm@tensorflow-modelsmobilenetscript
+    style
+        body { font-family sans-serif; text-align center; padding 40px; background #f8f9fa; }
+        .container { background white; padding 20px; display inline-block; border-radius 10px; shadow 0 4px 6px rgba(0,0,0,0.1); }
+        img { max-width 300px; border-radius 8px; margin-bottom 20px; display block; margin-left auto; margin-right auto; }
+        #results { font-weight bold; color #2c3e50; margin-top 15px; }
+        .score { color #27ae60; }
+    style
+head
+body
+
+div class=container
+    h1MobileNet Classifierh1
+    img id=img src=httpsimages.unsplash.comphoto-1514888286974-6c03e2ca1dbaw=400 crossorigin=anonymous 
+    
+    button id=classify-btn style=padding 10px 20px; cursor pointer;Classify Imagebutton
+    
+    div id=resultsStatus Loading Model...div
+div
+
+script
+    const img = document.getElementById('img');
+    const resultsDiv = document.getElementById('results');
+    const btn = document.getElementById('classify-btn');
+    let model;
+
+     1. Load the pre-trained MobileNet model
+    async function loadModel() {
+        model = await mobilenet.load();
+        resultsDiv.innerText = Model Loaded! Click to classify.;
+    }
+
+     2. Classify the image (Task 1 & 2)
+    btn.onclick = async () = {
+        resultsDiv.innerText = Analyzing...;
+        const predictions = await model.classify(img);
+        
+         3. Display Top-3 Predictions
+        resultsDiv.innerHTML = h3Top 3 Predictionsh3 + 
+            predictions.map(p = 
+                `p${p.className} span class=score${(p.probability  100).toFixed(2)}%spanp`
+            ).join('');
+    };
+
+    loadModel();
+script
+body
+html
