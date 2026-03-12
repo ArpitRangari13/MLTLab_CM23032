@@ -1,54 +1,99 @@
-!DOCTYPE html
-html lang=en
-head
-    meta charset=UTF-8
-    titleMobileNet Image Classifiertitle
-    script src=httpscdn.jsdelivr.netnpm@tensorflowtfjsscript
-    script src=httpscdn.jsdelivr.netnpm@tensorflow-modelsmobilenetscript
-    style
-        body { font-family sans-serif; text-align center; padding 40px; background #f8f9fa; }
-        .container { background white; padding 20px; display inline-block; border-radius 10px; shadow 0 4px 6px rgba(0,0,0,0.1); }
-        img { max-width 300px; border-radius 8px; margin-bottom 20px; display block; margin-left auto; margin-right auto; }
-        #results { font-weight bold; color #2c3e50; margin-top 15px; }
-        .score { color #27ae60; }
-    style
-head
-body
-
-div class=container
-    h1MobileNet Classifierh1
-    img id=img src=httpsimages.unsplash.comphoto-1514888286974-6c03e2ca1dbaw=400 crossorigin=anonymous 
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Task 1: Bulletproof MobileNet</title>
     
-    button id=classify-btn style=padding 10px 20px; cursor pointer;Classify Imagebutton
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
     
-    div id=resultsStatus Loading Model...div
-div
+    <style>
+        body { font-family: sans-serif; background: #e2e8f0; display: flex; justify-content: center; margin-top: 50px; }
+        .card { background: #1e293b; color: white; padding: 30px; border-radius: 15px; width: 400px; text-align: center; box-shadow: 0 10px 25px rgba(0,0,0,0.2); }
+        #status { background: #f59e0b; color: #fff; padding: 8px; border-radius: 8px; font-weight: bold; margin-bottom: 20px; }
+        .ready { background: #10b981 !important; }
+        .error { background: #ef4444 !important; }
+        img { max-width: 100%; border-radius: 8px; margin: 15px 0; display: none; }
+        .res-box { background: #334155; padding: 10px; margin-top: 5px; border-radius: 6px; text-align: left; }
+        button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px; width: 100%; }
+        button:disabled { background: #64748b; cursor: not-allowed; }
+    </style>
+</head>
+<body>
 
-script
-    const img = document.getElementById('img');
-    const resultsDiv = document.getElementById('results');
-    const btn = document.getElementById('classify-btn');
+<div class="card">
+    <h2>AI Vision (Safe Mode)</h2>
+    <div id="status">⏳ Downloading AI Model...</div>
+    
+    <input type="file" id="file-input" accept="image/*" style="display: none;">
+    <button id="upload-btn" disabled>Wait for AI to load...</button>
+    
+    <img id="preview" src="">
+    <div id="results"></div>
+</div>
+
+<script>
     let model;
+    const statusDiv = document.getElementById('status');
+    const uploadBtn = document.getElementById('upload-btn');
+    const fileInput = document.getElementById('file-input');
+    const preview = document.getElementById('preview');
+    const results = document.getElementById('results');
 
-     1. Load the pre-trained MobileNet model
-    async function loadModel() {
-        model = await mobilenet.load();
-        resultsDiv.innerText = Model Loaded! Click to classify.;
+    async function startAI() {
+        try {
+            console.log("Forcing CPU backend just in case...");
+            await tf.setBackend('cpu'); // Most stable fallback
+            console.log("Loading MobileNet...");
+            
+            model = await mobilenet.load({version: 2, alpha: 1.0});
+            
+            statusDiv.innerText = "✅ AI Ready!";
+            statusDiv.classList.add('ready');
+            uploadBtn.innerText = "Upload Image";
+            uploadBtn.disabled = false;
+        } catch (err) {
+            statusDiv.innerText = "❌ Error Loading AI";
+            statusDiv.classList.add('error');
+            console.error(err);
+            alert("Error: Check the F12 Developer Console for details.");
+        }
     }
 
-     2. Classify the image (Task 1 & 2)
-    btn.onclick = async () = {
-        resultsDiv.innerText = Analyzing...;
-        const predictions = await model.classify(img);
-        
-         3. Display Top-3 Predictions
-        resultsDiv.innerHTML = h3Top 3 Predictionsh3 + 
-            predictions.map(p = 
-                `p${p.className} span class=score${(p.probability  100).toFixed(2)}%spanp`
-            ).join('');
+    uploadBtn.onclick = () => fileInput.click();
+
+    fileInput.onchange = (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            preview.src = event.target.result;
+            preview.style.display = "block";
+            
+            // Wait for image to render
+            preview.onload = async () => {
+                statusDiv.innerText = "🧠 Thinking...";
+                statusDiv.style.background = "#3b82f6";
+                
+                const preds = await model.classify(preview);
+                
+                results.innerHTML = preds.map(p => `
+                    <div class="res-box">
+                        <strong>${p.className.split(',')[0]}</strong> <br>
+                        Confidence: ${(p.probability * 100).toFixed(1)}%
+                    </div>
+                `).join('');
+                
+                statusDiv.innerText = "✅ AI Ready!";
+                statusDiv.style.background = "#10b981";
+            };
+        };
+        reader.readAsDataURL(file);
     };
 
-    loadModel();
-script
-body
-html
+    startAI();
+</script>
+
+</body>
+</html>

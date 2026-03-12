@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Webcam AR Overlay</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; padding-top: 40px; margin: 0; }
+        .dashboard { background: #1e293b; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); width: 100%; max-width: 500px; text-align: center; }
+        h2 { margin-top: 0; color: #e2e8f0; }
+        
+        #status { display: inline-block; background: #f59e0b; color: #fff; padding: 8px 16px; border-radius: 30px; font-weight: bold; margin-bottom: 20px; font-size: 0.9em; }
+        .ready { background: #10b981 !important; }
+        
+        /* THE MAGIC TRICK: The container must be relative so the overlay can be absolute */
+        .video-container { position: relative; display: inline-block; width: 100%; border-radius: 12px; overflow: hidden; border: 2px solid #334155; box-shadow: 0 10px 20px rgba(0,0,0,0.3); }
+        
+        video { width: 100%; display: block; background: #000; transform: scaleX(-1); }
+        
+        /* The Overlay Label styling */
+        .overlay-label { 
+            position: absolute; 
+            bottom: 20px; 
+            left: 50%; 
+            transform: translateX(-50%); /* Centers the box perfectly */
+            background: rgba(15, 23, 42, 0.85); 
+            color: #10b981; 
+            padding: 10px 25px; 
+            border-radius: 12px; 
+            font-size: 1.4em; 
+            font-weight: 800; 
+            text-transform: capitalize; 
+            white-space: nowrap;
+            border: 1px solid #10b981;
+            backdrop-filter: blur(4px);
+        }
+        
+        .overlay-conf { font-family: monospace; font-size: 0.8em; color: #94a3b8; display: block; margin-top: 2px; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <h2>AR Object Detection</h2>
+        <div id="status">⏳ Connecting to Camera...</div>
+        
+        <div class="video-container">
+            <video id="webcam" autoplay playsinline muted></video>
+            <div id="overlay" class="overlay-label">
+                Waiting for AI...
+                <span class="overlay-conf">--%</span>
+            </div>
+        </div>
+        
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const status = document.getElementById('status');
+        const overlay = document.getElementById('overlay');
+        let model;
+
+        async function setupWebcam() {
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => resolve(video);
+            });
+        }
+
+        async function predictLoop() {
+            // Get predictions
+            const predictions = await model.classify(video);
+            
+            // Extract the top prediction
+            const topName = predictions[0].className.split(',')[0];
+            const topConf = (predictions[0].probability * 100).toFixed(1);
+            
+            // Inject directly into the overlay box
+            overlay.innerHTML = `
+                ${topName}
+                <span class="overlay-conf">Confidence: ${topConf}%</span>
+            `;
+
+            // Loop forever
+            requestAnimationFrame(predictLoop);
+        }
+
+        async function startApp() {
+            try {
+                model = await mobilenet.load({version: 2, alpha: 1.0});
+                await setupWebcam();
+                
+                status.innerText = "🟢 AR Overlay Active";
+                status.classList.add('ready');
+
+                predictLoop();
+            } catch (error) {
+                console.error("Initialization failed:", error);
+            }
+        }
+
+        startApp();
+    </script>
+
+</body>
+</html>

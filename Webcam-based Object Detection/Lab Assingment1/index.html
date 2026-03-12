@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Webcam Classification</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@3.18.0/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.0/dist/mobilenet.min.js"></script>
+    
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f172a; color: white; display: flex; justify-content: center; padding-top: 40px; margin: 0; }
+        .dashboard { background: #1e293b; padding: 30px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.5); width: 100%; max-width: 450px; text-align: center; }
+        h2 { margin-top: 0; color: #e2e8f0; }
+        
+        #status { display: inline-block; background: #f59e0b; color: #fff; padding: 8px 16px; border-radius: 30px; font-weight: bold; margin-bottom: 20px; font-size: 0.9em; }
+        .ready { background: #10b981 !important; }
+        .error { background: #ef4444 !important; }
+        
+        /* Mirror the video so it acts like a real mirror */
+        video { width: 100%; border-radius: 12px; background: #000; transform: scaleX(-1); border: 2px solid #334155; margin-bottom: 20px; }
+        
+        .result-box { background: #334155; padding: 15px; border-radius: 12px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; border-left: 5px solid #3b82f6; }
+        .item-name { text-transform: capitalize; font-weight: bold; font-size: 1.1em; }
+        .item-conf { font-family: monospace; font-size: 1.2em; color: #10b981; }
+    </style>
+</head>
+<body>
+
+    <div class="dashboard">
+        <h2>Live Object Detection</h2>
+        <div id="status">⏳ Loading AI & Camera...</div>
+        
+        <video id="webcam" autoplay playsinline muted></video>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const status = document.getElementById('status');
+        const resultsDiv = document.getElementById('results');
+        let model;
+
+        // 1. Request Webcam Access
+        async function setupWebcam() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                
+                // Return a promise that resolves when the video starts playing
+                return new Promise((resolve) => {
+                    video.onloadedmetadata = () => {
+                        resolve(video);
+                    };
+                });
+            } catch (err) {
+                status.innerText = "❌ Camera Access Denied";
+                status.classList.add('error');
+                console.error("Webcam Error:", err);
+                throw err;
+            }
+        }
+
+        // 2. The Continuous Prediction Loop
+        async function predictLoop() {
+            // Pass the entire <video> element to the classifier
+            const predictions = await model.classify(video);
+            
+            // Display the Top 3 results
+            resultsDiv.innerHTML = predictions.map(p => `
+                <div class="result-box">
+                    <span class="item-name">${p.className.split(',')[0]}</span>
+                    <span class="item-conf">${(p.probability * 100).toFixed(1)}%</span>
+                </div>
+            `).join('');
+
+            // Recursively call itself to process the next frame
+            requestAnimationFrame(predictLoop);
+        }
+
+        // 3. Initialize Everything
+        async function startApp() {
+            try {
+                // Load the MobileNet Engine
+                model = await mobilenet.load({version: 2, alpha: 1.0});
+                
+                // Turn on the Camera
+                await setupWebcam();
+                
+                // Update UI
+                status.innerText = "🟢 Live Feed Active";
+                status.classList.add('ready');
+
+                // Start analyzing frames
+                predictLoop();
+                
+            } catch (error) {
+                console.error("Initialization failed:", error);
+            }
+        }
+
+        startApp();
+    </script>
+
+</body>
+</html>
