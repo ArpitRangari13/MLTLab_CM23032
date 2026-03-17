@@ -33,6 +33,10 @@ The goal is to explore fundamental ML concepts, hands-on coding with TensorFlow.
 | 3 | **Digit Recognition (MNIST Dataset)** | [View Lab 3](./Digit%20Recognition%20(MNIST%20Dataset)/) |
 | 4 | **Text Sentiment Analysis** | [View Lab 4](./Text%20Sentiment%20Analysis/) |
 | 5 | **Webcam-based Object Detection** | [View Lab 5](./Webcam-based%20Object%20Detection/) |
+| 6 | **Pose Detection with Pre-trained Model (PoseNet)** | [View Lab 6](./Webcam-based%20Object%20Detection/) |
+| 7 | **Deploying a Model in Browser** | [View Lab 7](./Webcam-based%20Object%20Detection/) |
+| 8 | **Transfer Learning with Images** | [View Lab 8](./Webcam-based%20Object%20Detection/) |
+| 9 | **Open Ended Practical** | [View Lab 9](./Webcam-based%20Object%20Detection/) |
 
 
 ---
