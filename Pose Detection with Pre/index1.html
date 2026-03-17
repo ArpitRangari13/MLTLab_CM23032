@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Optimized PoseNet</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #121212;
+            color: #00ffcc;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 30px;
+        }
+        .video-container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            border: 2px solid #333;
+            border-radius: 8px;
+            background-color: black;
+            overflow: hidden;
+        }
+        /* Mirror the video and canvas */
+        video, canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 640px;
+            height: 480px;
+            transform: scaleX(-1); 
+        }
+        canvas {
+            z-index: 10;
+        }
+        #metrics {
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+            font-weight: bold;
+        }
+        .fps { color: #ff00ff; }
+    </style>
+</head>
+<body>
+
+    <h2>⚡ Optimized Biometric Tracking</h2>
+    <div id="metrics">Status: <span id="status">Loading Lightweight Model...</span> | <span class="fps">FPS: <span id="fps-counter">0</span></span></div>
+
+    <div class="video-container">
+        <video id="webcam" playsinline autoplay muted width="640" height="480"></video>
+        <canvas id="canvas" width="640" height="480"></canvas>
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statusText = document.getElementById('status');
+        const fpsText = document.getElementById('fps-counter');
+        
+        let lastFrameTime = performance.now();
+
+        // 1. Setup the Webcam
+        async function setupCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { width: 640, height: 480 }
+            });
+            video.srcObject = stream;
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => resolve(video);
+            });
+        }
+
+        // 2. The Main Function
+        async function main() {
+            try {
+                // 🚀 THE OPTIMIZATION: Load the smallest, fastest model
+                const net = await posenet.load({
+                    architecture: 'MobileNetV1',
+                    outputStride: 16,
+                    inputResolution: { width: 257, height: 257 }, // Smaller resolution = less math
+                    multiplier: 0.50 // Only load half the weights!
+                });
+                
+                statusText.innerText = "Camera Starting...";
+                statusText.style.color = "white";
+
+                await setupCamera();
+                video.play();
+                statusText.innerText = "Tracking Active";
+                statusText.style.color = "#00ffcc";
+
+                // 3. The Real-Time Prediction Loop
+                async function detectPose() {
+                    // Track FPS
+                    const now = performance.now();
+                    const fps = Math.round(1000 / (now - lastFrameTime));
+                    fpsText.innerText = fps;
+                    lastFrameTime = now;
+
+                    // Run the fast inference
+                    const pose = await net.estimateSinglePose(video, {
+                        flipHorizontal: false 
+                    });
+
+                    // Clear canvas
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    // Draw the points
+                    if (pose.score >= 0.2) {
+                        pose.keypoints.forEach(keypoint => {
+                            if (keypoint.score > 0.2) {
+                                ctx.beginPath();
+                                ctx.arc(keypoint.position.x, keypoint.position.y, 5, 0, 2 * Math.PI);
+                                ctx.fillStyle = '#00ffcc';
+                                ctx.fill();
+                            }
+                        });
+
+                        // Draw the skeleton lines
+                        const adjacentKeyPoints = posenet.getAdjacentKeyPoints(pose.keypoints, 0.2);
+                        adjacentKeyPoints.forEach((points) => {
+                            ctx.beginPath();
+                            ctx.moveTo(points[0].position.x, points[0].position.y);
+                            ctx.lineTo(points[1].position.x, points[1].position.y);
+                            ctx.lineWidth = 2;
+                            ctx.strokeStyle = '#ff00ff';
+                            ctx.stroke();
+                        });
+                    }
+
+                    // Loop endlessly synchronized with screen refresh
+                    requestAnimationFrame(detectPose);
+                }
+
+                detectPose();
+
+            } catch (error) {
+                console.error(error);
+                statusText.innerText = "Error Loading.";
+                statusText.style.color = "red";
+            }
+        }
+
+        main();
+    </script>
+</body>
+</html>
