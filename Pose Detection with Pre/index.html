@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Live Pose Detection (PoseNet)</title>
+    
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/posenet"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: white;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-top: 50px;
+        }
+        /* The container keeps the canvas perfectly aligned over the video */
+        .video-container {
+            position: relative;
+            width: 640px;
+            height: 480px;
+            border: 3px solid #00ffcc;
+            border-radius: 8px;
+            overflow: hidden;
+            background-color: black;
+        }
+        /* We flip both the video and canvas horizontally so it acts like a mirror */
+        video, canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 640px;
+            height: 480px;
+            transform: scaleX(-1); 
+        }
+        canvas {
+            z-index: 10; /* Ensures the drawings are on top of the video */
+        }
+        #status {
+            margin-bottom: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Biometric Pose Tracking</h2>
+    <div id="status">⏳ Loading PoseNet Model...</div>
+
+    <div class="video-container">
+        <video id="webcam" playsinline autoplay muted width="640" height="480"></video>
+        <canvas id="canvas" width="640" height="480"></canvas>
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+        const statusText = document.getElementById('status');
+        
+        // 1. Setup the Webcam
+        async function setupCamera() {
+            const stream = await navigator.mediaDevices.getUserMedia({
+                video: { width: 640, height: 480 }
+            });
+            video.srcObject = stream;
+
+            return new Promise((resolve) => {
+                video.onloadedmetadata = () => resolve(video);
+            });
+        }
+
+        // 2. Draw the Dots (Joints)
+        function drawKeypoints(keypoints, minConfidence) {
+            keypoints.forEach(keypoint => {
+                if (keypoint.score > minConfidence) {
+                    const { y, x } = keypoint.position;
+                    ctx.beginPath();
+                    ctx.arc(x, y, 6, 0, 2 * Math.PI); // Draw a 6px circle
+                    ctx.fillStyle = '#00ffcc'; // Cyan color
+                    ctx.fill();
+                }
+            });
+        }
+
+        // 3. Draw the Lines (Bones)
+        function drawSkeleton(keypoints, minConfidence) {
+            // PoseNet has a built-in helper to know which joints connect (e.g., shoulder to elbow)
+            const adjacentKeyPoints = posenet.getAdjacentKeyPoints(keypoints, minConfidence);
+
+            adjacentKeyPoints.forEach((points) => {
+                ctx.beginPath();
+                ctx.moveTo(points[0].position.x, points[0].position.y);
+                ctx.lineTo(points[1].position.x, points[1].position.y);
+                ctx.lineWidth = 3;
+                ctx.strokeStyle = '#ff00ff'; // Magenta color
+                ctx.stroke();
+            });
+        }
+
+        // 4. The Main Loop
+        async function main() {
+            try {
+                // Load the AI
+                const net = await posenet.load();
+                statusText.innerText = "📷 Starting Camera...";
+
+                // Boot the camera
+                await setupCamera();
+                video.play();
+                statusText.innerText = "🟢 Real-Time Tracking Active";
+
+                // The infinite prediction loop
+                async function detectPose() {
+                    // Get the coordinates
+                    const pose = await net.estimateSinglePose(video, {
+                        flipHorizontal: false // We already flipped it via CSS above
+                    });
+
+                    // Clear the canvas for the new frame
+                    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                    // Draw the skeleton and joints if the AI is > 20% confident
+                    const minConfidence = 0.2;
+                    drawSkeleton(pose.keypoints, minConfidence);
+                    drawKeypoints(pose.keypoints, minConfidence);
+
+                    // Wait for next screen refresh, then loop
+                    requestAnimationFrame(detectPose);
+                }
+
+                // Start the loop
+                detectPose();
+
+            } catch (error) {
+                console.error(error);
+                statusText.innerText = "❌ Error: Could not load camera or model.";
+                statusText.style.color = "red";
+            }
+        }
+
+        // Execute the program
+        main();
+    </script>
+</body>
+</html>
