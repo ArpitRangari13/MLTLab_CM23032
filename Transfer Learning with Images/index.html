@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>AI Multi-Fruit Classifier</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier"></script>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background: #f8f9fa; text-align: center; padding: 20px; }
+        .video-box { border: 8px solid #333; border-radius: 20px; display: inline-block; background: black; }
+        .controls { margin-top: 20px; display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; max-width: 600px; margin-left: auto; margin-right: auto; }
+        button { padding: 15px; font-weight: bold; cursor: pointer; border-radius: 10px; border: none; transition: 0.2s; }
+        .btn-apple { background: #ff4d4d; color: white; }
+        .btn-banana { background: #ffeb3b; color: #333; }
+        .btn-tomato { background: #ff6347; color: white; }
+        .btn-train { background: #28a745; color: white; grid-column: span 3; margin-top: 10px; font-size: 1.2rem; }
+        button:active { transform: scale(0.95); opacity: 0.8; }
+        #result { font-size: 2.5rem; margin-top: 20px; color: #333; }
+        #status { color: #666; font-style: italic; }
+    </style>
+</head>
+<body>
+
+    <h1>🍅 AI Fruit Recognition 🍎</h1>
+    <p id="status">Loading MobileNet...</p>
+
+    <div class="video-box">
+        <video id="webcam" width="400" height="300" autoplay muted playsinline></video>
+    </div>
+
+    <div id="result">---</div>
+
+    <div class="controls">
+        <button class="btn-apple" onmousedown="addExample(0)" onmouseup="stop()">Add Apple 🍎</button>
+        <button class="btn-banana" onmousedown="addExample(1)" onmouseup="stop()">Add Banana 🍌</button>
+        <button class="btn-tomato" onmousedown="addExample(2)" onmouseup="stop()">Add Tomato 🍅</button>
+        <button class="btn-train" onclick="startPredicting()">🚀 START RECOGNITION</button>
+    </div>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const resultArea = document.getElementById('result');
+        const statusArea = document.getElementById('status');
+        
+        let classifier;
+        let mobilenetModel;
+        let isCollecting = false;
+        const labels = ["APPLE 🍎", "BANANA 🍌", "TOMATO 🍅"];
+
+        async function init() {
+            // Load the KNN Classifier and MobileNet
+            classifier = knnClassifier.create();
+            mobilenetModel = await mobilenet.load();
+            
+            statusArea.innerText = "Model Loaded! Hold buttons to train.";
+
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            video.srcObject = stream;
+        }
+
+        async function addExample(labelId) {
+            isCollecting = true;
+            statusArea.innerText = `Collecting samples for ${labels[labelId]}...`;
+            
+            while (isCollecting) {
+                // 1. Capture frame from webcam
+                const img = tf.browser.fromPixels(video);
+                
+                // 2. Get the "Activation" (The internal pattern MobileNet sees)
+                const activation = mobilenetModel.infer(img, 'conv_preds');
+                
+                // 3. Add to our custom KNN head
+                classifier.addExample(activation, labelId);
+                
+                img.dispose();
+                await tf.nextFrame();
+            }
+        }
+
+        function stop() {
+            isCollecting = false;
+            statusArea.innerText = "Samples saved. Add more or start recognition.";
+        }
+
+        async function startPredicting() {
+            if (classifier.getNumClasses() === 0) {
+                alert("Please add some examples first!");
+                return;
+            }
+
+            statusArea.innerText = "AI is now predicting in real-time...";
+            
+            setInterval(async () => {
+                const img = tf.browser.fromPixels(video);
+                const activation = mobilenetModel.infer(img, 'conv_preds');
+                
+                // Predict based on the closest learned samples
+                const result = await classifier.predictClass(activation);
+                
+                resultArea.innerText = labels[result.label];
+                img.dispose();
+            }, 100);
+        }
+
+        init();
+    </script>
+</body>
+</html>
