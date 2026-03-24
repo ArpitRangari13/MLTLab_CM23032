@@ -1,0 +1,21 @@
+// Add this logic to your script to generate a report
+async function evaluateModel(testData) {
+    let correct = 0;
+    // Confusion Matrix: [Actual][Predicted]
+    let matrix = [
+        [0, 0, 0], // Apple
+        [0, 0, 0], // Banana
+        [0, 0, 0]  // Orange
+    ];
+
+    testData.forEach(async (item) => {
+        const activation = net.infer(item.img, 'conv_preds');
+        const result = await classifier.predictClass(activation);
+        
+        matrix[item.actualLabel][result.label]++;
+        if(item.actualLabel === result.label) correct++;
+    });
+
+    console.table(matrix);
+    console.log(`Accuracy: ${(correct / testData.length) * 100}%`);
+}

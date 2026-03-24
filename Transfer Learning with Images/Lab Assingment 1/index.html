@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>1. Fruit Retraining</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/knn-classifier"></script>
+</head>
+<body>
+    <h2>🍎 Banana 🍌 Orange 🍊 Classifier</h2>
+    <video id="webcam" autoplay playsinline width="300" height="300"></video>
+    <div id="res" style="font-size:24px; color:blue;">Train to start...</div>
+    <hr>
+    <button onmousedown="add(0)" onmouseup="stop()">Add Apple</button>
+    <button onmousedown="add(1)" onmouseup="stop()">Add Banana</button>
+    <button onmousedown="add(2)" onmouseup="stop()">Add Orange</button>
+    <button onclick="predict()" style="background:green; color:white;">Start Real-time Predict</button>
+
+    <script>
+        let net, classifier, isTraining = false;
+        const labels = ["APPLE", "BANANA", "ORANGE"];
+
+        async function init() {
+            net = await mobilenet.load();
+            classifier = knnClassifier.create();
+            const stream = await navigator.mediaDevices.getUserMedia({video: true});
+            document.getElementById('webcam').srcObject = stream;
+        }
+
+        async function add(id) {
+            isTraining = true;
+            while(isTraining) {
+                const img = tf.browser.fromPixels(document.getElementById('webcam'));
+                const activation = net.infer(img, 'conv_preds');
+                classifier.addExample(activation, id);
+                img.dispose();
+                await tf.nextFrame();
+            }
+        }
+        function stop() { isTraining = false; }
+
+        async function predict() {
+            setInterval(async () => {
+                if (classifier.getNumClasses() > 0) {
+                    const img = tf.browser.fromPixels(document.getElementById('webcam'));
+                    const activation = net.infer(img, 'conv_preds');
+                    const res = await classifier.predictClass(activation);
+                    document.getElementById('res').innerText = `Prediction: ${labels[res.label]}`;
+                    img.dispose();
+                }
+            }, 100);
+        }
+        init();
+    </script>
+</body>
+</html>

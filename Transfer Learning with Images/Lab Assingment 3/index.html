@@ -1,0 +1,20 @@
+<button onmousedown="add(3)" onmouseup="stop()">Add Tomato (Incremental)</button>
+<div id="analysis"></div>
+
+<script>
+    // Analysis Function
+    async function analyzePerformance() {
+        const img = tf.browser.fromPixels(document.getElementById('webcam'));
+        const activation = net.infer(img, 'conv_preds');
+        const res = await classifier.predictClass(activation);
+        
+        // As you add more classes, the "Probability Spread" increases
+        // result.confidences contains the probability for ALL classes
+        let report = "Confidence Spread:<br>";
+        for (const [id, score] of Object.entries(res.confidences)) {
+            report += `Class ${id}: ${(score * 100).toFixed(2)}% <br>`;
+        }
+        document.getElementById('analysis').innerHTML = report;
+        img.dispose();
+    }
+</script>

@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>3. Export & Import Files</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+</head>
+<body>
+    <h2>Export & Import Model Files</h2>
+    
+    <button onclick="exportModel()">1. Export (Download Files)</button>
+    <hr>
+    <p>Select BOTH model.json and model.weights.bin:</p>
+    <input type="file" id="loader" multiple>
+    <button onclick="importAndTest()">2. Import & Test</button>
+    
+    <h3 id="out"></h3>
+
+    <script>
+        // 1. Export Logic
+        async function exportModel() {
+            const model = tf.sequential();
+            model.add(tf.layers.dense({units: 1, inputShape: [1]}));
+            model.compile({loss: 'meanSquaredError', optimizer: 'sgd'});
+            
+            // Minimal training so it has some "knowledge"
+            await model.fit(tf.tensor2d([1], [1,1]), tf.tensor2d([2], [1,1]), {epochs:1});
+            
+            // Triggers browser download
+            await model.save('downloads://exported-model');
+        }
+
+        // 2. Import Logic
+        async function importAndTest() {
+            const files = document.getElementById('loader').files;
+            if (files.length < 2) return alert("Select both files!");
+
+            // Load from selected browser files
+            const model = await tf.loadLayersModel(tf.io.browserFiles([files[0], files[1]]));
+            
+            const pred = model.predict(tf.tensor2d([10], [1, 1]));
+            const val = await pred.data();
+            document.getElementById('out').innerText = "Imported Model Prediction: " + val[0].toFixed(2);
+        }
+    </script>
+</body>
+</html>

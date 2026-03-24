@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>2. Reload & Verify</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+</head>
+<body>
+    <h2>Reload from LocalStorage</h2>
+    <button onclick="verify()">Load & Verify Prediction</button>
+    <h3 id="result"></h3>
+
+    <script>
+        async function verify() {
+            try {
+                // Load the model back from the browser's internal storage
+                const loadedModel = await tf.loadLayersModel('localstorage://my-model-1');
+                
+                // Predict for x = 5 (Target should be ~16 based on y = 3x + 1)
+                const input = tf.tensor2d([5], [1, 1]);
+                const prediction = loadedModel.predict(input);
+                const val = await prediction.data();
+
+                document.getElementById('result').innerText = 
+                    "Reloaded Prediction for 5: " + val[0].toFixed(2);
+            } catch (err) {
+                alert("No model found in LocalStorage! Run Step 1 first.");
+            }
+        }
+    </script>
+</body>
+</html>
