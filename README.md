@@ -36,7 +36,7 @@ The goal is to explore fundamental ML concepts, hands-on coding with TensorFlow.
 | 6 | **Pose Detection with Pre-trained Model (PoseNet)** | [View Lab 6](./Webcam-based%20Object%20Detection/) |
 | 7 | **Deploying a Model in Browser** | [View Lab 7](./Webcam-based%20Object%20Detection/) |
 | 8 | **Transfer Learning with Images** | [View Lab 8](./Webcam-based%20Object%20Detection/) |
-| 9 | **Open Ended Practical** | [View Lab 9](./Webcam-based%20Object%20Detection/) |
+| 9 | **Open Ended Practical** | [View Lab 9](./ArpitRangari13/Indian-Sign-Language-Translator-ISL-/) |
 
 
 ---
